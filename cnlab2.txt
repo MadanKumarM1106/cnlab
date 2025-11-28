@@ -1,23 +1,30 @@
 3. Write a program for error detecting code using CRC-CCITT (16- bits).
 
-public class  c1rc {
+public class crc {
+   public static void main(String[] args)
+   {
+      int crc=0xffff;
+      int polynomial=0x1021;
+      byte[] bytes=args[0].getBytes();
+      for(byte b:bytes)
+      {
+         for(int i=0;i<8;i++)
+         {
+            boolean bit=((b>>(7-i)&1)==1);
+            boolean cr15=((crc>>15&1)==1);
+            crc<<=1;
+            
+            if(bit^cr15) crc^=polynomial;
+            crc &= 0xFFFF;
+         }
+      }
+       
+      System.out.println(Integer.toHexString(crc).toUpperCase());
+   }
 
-    public static void main(String[] args) {
-        int crc = 0xFFFF;        
-        int polynomial = 0x1021;  
-        byte[] bytes = args[0].getBytes();
-        for (byte b : bytes) {
-            for (int i = 0; i < 8; i++) {
-                boolean bit = ((b >> (7 - i) & 1) == 1);
-                boolean c15 = ((crc >> 15 & 1) == 1);
-                crc <<= 1;
-                if (c15 ^ bit) crc ^= polynomial;
-            }
-        }
-        crc &= 0xffff;
-         System.out.println("CRC16-CCITT = " + Integer.toHexString(crc));
-    }
+
 }
+
  
 4.Develop a program for a simple RSA algorithm to encrypt and decrypt the 
 data.
@@ -384,6 +391,7 @@ Run AWK to count drops
 awk -f drop.awk lab2.tr
 View NAM Animation
 nam lab2.nam &
+
 
 
 
