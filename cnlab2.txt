@@ -1,0 +1,389 @@
+3. Write a program for error detecting code using CRC-CCITT (16- bits).
+
+public class  c1rc {
+
+    public static void main(String[] args) {
+        int crc = 0xFFFF;        
+        int polynomial = 0x1021;  
+        byte[] bytes = args[0].getBytes();
+        for (byte b : bytes) {
+            for (int i = 0; i < 8; i++) {
+                boolean bit = ((b >> (7 - i) & 1) == 1);
+                boolean c15 = ((crc >> 15 & 1) == 1);
+                crc <<= 1;
+                if (c15 ^ bit) crc ^= polynomial;
+            }
+        }
+        crc &= 0xffff;
+         System.out.println("CRC16-CCITT = " + Integer.toHexString(crc));
+    }
+}
+ 
+4.Develop a program for a simple RSA algorithm to encrypt and decrypt the 
+data.
+
+package src.bin;
+import java.util.Scanner;
+
+public class Rsa {
+
+    public static int mult(int m, int y, int n) {
+        int k = 1;
+        for (int j = 1; j <= y; j++)
+            k = (k * m) % n;
+        return k;
+    }
+
+    public static int gcd(int m, int n) {
+        if (n == 0)
+            return m;
+        else
+            return gcd(n, m % n);
+    }
+
+    public static int isprime(int num) {
+        for (int k = 2; k <= num / 2; k++) {
+            if (num % k == 0) {
+                System.out.println(num + " not a prime number");
+                return 0;
+            }
+        }
+        System.out.println(num + " is a prime number");
+        return num;
+    }
+
+    public static void main(String[] args) {
+        int msg, plaintext, ciphertext;
+        int n, d = 0, e, z, p, q, i;
+
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Enter two prime values p and q: ");
+        p = scanner.nextInt();  // Example: 11
+        q = scanner.nextInt();  // Example: 3
+
+        int a = isprime(p);
+        int b = isprime(q);
+
+        if (a == p && b == q && a != 0 && b != 0) {
+            System.out.println("Enter message:");
+            msg = scanner.nextInt(); // Example: 7
+
+            n = p * q;        // n = 33
+            z = (p - 1) * (q - 1); // z = 20
+
+            do {
+                System.out.println("Choose e (2 < e < z) such that gcd(z,e)=1: ");
+                e = scanner.nextInt(); // Example: 3
+            } while (gcd(z, e) != 1);
+
+            i = 2;
+            while ((i * e) % z != 1) {
+                i++;
+            }
+            d = i;   // d = 7
+
+            System.out.println("Public key: (" + e + "," + n + ")");
+            System.out.println("Private key: (" + d + "," + n + ")");
+
+            ciphertext = mult(msg, e, n);
+            System.out.println("Cipher Text = " + ciphertext);
+
+            plaintext = mult(ciphertext, d, n);
+            System.out.println("Plain Text = " + plaintext);
+        }
+        scanner.close();
+    }
+}
+
+5. Develop a program to implement a sliding window protocol in the data link layer.
+import java.io.*;
+import java.net.*;
+import java.util.Scanner;
+
+class stopwaitsender {
+    public static void main(String args[]) throws Exception {
+        stopwaitsender sws = new stopwaitsender();
+        sws.run();
+    }
+
+    public void run() throws Exception {
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter number of frames to be sent:");
+        int n = sc.nextInt();
+
+        Socket myskt = new Socket("localhost", 9999);
+        PrintStream myps = new PrintStream(myskt.getOutputStream());
+        BufferedReader bf = new BufferedReader(new InputStreamReader(myskt.getInputStream()));
+
+        for(int i = 0; i <= n; ) {
+            if(i == n) {
+                myps.println("exit");
+                break;
+            }
+
+            System.out.println("Frame no " + i + " is sent");
+            myps.println(i);
+
+            String ack = bf.readLine();
+            if(ack != null) {
+                System.out.println("Acknowledgement Received from receiver");
+                i++;
+                Thread.sleep(2000);
+            }
+            else {
+                myps.println(i);
+            }
+        }
+
+        myskt.close();
+        sc.close();
+    }
+}
+
+import java.io.*;
+import java.net.*;
+
+class stopwaitreceiver {
+    public static void main(String args[]) throws Exception {
+        stopwaitreceiver swr = new stopwaitreceiver();
+        swr.run();
+    }
+
+    public void run() throws Exception {
+        String temp = "any message";
+        String exitStr = "exit";
+
+        ServerSocket myss = new ServerSocket(9999);
+        Socket ss_accept = myss.accept();
+
+        BufferedReader ss_bf = new BufferedReader(new InputStreamReader(ss_accept.getInputStream()));
+        PrintStream myps = new PrintStream(ss_accept.getOutputStream());
+
+        while(!temp.equals(exitStr)) {
+            temp = ss_bf.readLine();
+
+            if(temp.equals(exitStr))
+                break;
+
+            System.out.println("Frame " + temp + " was received");
+            Thread.sleep(500);
+            myps.println("Received");
+        }
+
+        System.out.println("ALL FRAMES WERE RECEIVED SUCCESSFULLY");
+
+        ss_accept.close();
+        myss.close();
+    }
+}
+
+1. Implement three nodes point – to – point network with duplex links between them. Set 
+the queue size, vary the bandwidth and find the number of packets dropped.  
+
+# Create a simulator object
+set ns [new Simulator]
+
+# Create NAM & Trace files
+set nf [open lab1.nam w]
+$ns namtrace-all $nf
+
+set tf [open lab1.tr w]
+$ns trace-all $tf
+
+# Define finish procedure
+proc finish {} {
+    global ns nf tf
+    $ns flush-trace
+    close $nf
+    close $tf
+    exec nam lab1.nam &
+    exit 0
+}
+
+# Create 4 nodes
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+
+# Create duplex links
+$ns duplex-link $n0 $n2 200Mb 10ms DropTail
+$ns duplex-link $n1 $n2 100Mb 5ms DropTail
+$ns duplex-link $n2 $n3 1Mb 1000ms DropTail
+
+# Set queue limits
+$ns queue-limit $n0 $n2 10
+$ns queue-limit $n1 $n2 10
+
+# Setup traffic sources (UDP + CBR)
+set udp0 [new Agent/UDP]
+$ns attach-agent $n0 $udp0
+
+set cbr0 [new Application/Traffic/CBR]
+$cbr0 set packetSize_ 500
+$cbr0 set interval_ 0.005
+$cbr0 attach-agent $udp0
+
+set udp1 [new Agent/UDP]
+$ns attach-agent $n1 $udp1
+
+set cbr1 [new Application/Traffic/CBR]
+$cbr1 set packetSize_ 500
+$cbr1 set interval_ 0.005
+$cbr1 attach-agent $udp1
+
+# Null agent at destination
+set null0 [new Agent/Null]
+$ns attach-agent $n3 $null0
+
+# Connect sources to destination
+$ns connect $udp0 $null0
+$ns connect $udp1 $null0
+
+# Schedule events
+$ns at 0.1 "$cbr0 start"
+$ns at 0.2 "$cbr1 start"
+$ns at 1.0 "finish"
+
+# Run simulation
+$ns run
+
+AWK file (Open a new editor using “vi command” and write awk file and save with 
+“.awk” extension) /*immediately after BEGIN should open braces „{„ 
+
+BEGIN {
+    c = 0;
+}
+
+{
+    if ($1 == "d") {
+        c++;
+        printf("%s\t%s\n", $5, $11);
+    }
+}
+
+END {
+    printf("The number of packets dropped = %d\n", c);
+}
+
+
+Create TCL file:
+
+vi lab1.tcl
+
+Execute simulation:
+
+ns lab1.tcl
+
+View animation:
+
+nam lab1.nam &
+
+Run AWK file on trace:
+
+awk -f drop.awk lab1.tr
+
+2. Implement transmission of ping messages/trace route over a network topology consisting of 6 
+nodes and find the number of packets dropped due to congestion. 
+
+# Create Simulator
+set ns [new Simulator]
+
+# Trace files
+set nf [open lab2.nam w]
+$ns namtrace-all $nf
+
+set tr [open lab2.tr w]
+$ns trace-all $tr
+
+# Create Nodes
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+set n4 [$ns node]
+set n5 [$ns node]
+
+# Topology links
+$ns duplex-link $n0 $n4 100Mb 1ms DropTail
+$ns duplex-link $n1 $n4 50Mb 1ms DropTail
+$ns duplex-link $n2 $n4 200Mb 1ms DropTail
+$ns duplex-link $n3 $n4 200Mb 1ms DropTail
+$ns duplex-link $n4 $n5 5Mb 1ms DropTail
+
+# Queue limits (small = congestion forced)
+$ns queue-limit $n0 $n4 5
+$ns queue-limit $n1 $n4 3
+$ns queue-limit $n4 $n5 3
+
+# Create Ping Agents
+set p1 [new Agent/Ping]
+$ns attach-agent $n0 $p1
+
+set p2 [new Agent/Ping]
+$ns attach-agent $n1 $p2
+
+set p3 [new Agent/Ping]
+$ns attach-agent $n2 $p3
+
+set p4 [new Agent/Ping]
+$ns attach-agent $n3 $p4
+
+set p5 [new Agent/Ping]
+$ns attach-agent $n5 $p5
+
+# Connections (ping traffic crossover)
+$ns connect $p1 $p5
+$ns connect $p2 $p4
+$ns connect $p3 $p5
+$ns connect $p3 $p4
+
+# Modify recv to print ping output
+Agent/Ping instproc recv {from rtt} {
+    $self instvar node_
+    puts "Node [set node_] received reply from $from RTT = $rtt ms"
+}
+
+# Schedule pings
+for {set t 0.1} {$t <= 2.9} {set t [expr $t + 0.1]} {
+    $ns at $t "$p1 send"
+    $ns at $t "$p2 send"
+    $ns at $t "$p3 send"
+}
+
+# Finish
+proc finish {} {
+    global ns nf tr
+    $ns flush-trace
+    close $nf
+    close $tr
+    exec nam lab2.nam &
+    exit 0
+}
+
+$ns at 3.0 "finish"
+$ns run
+
+next--------part:::
+BEGIN {
+    drop = 0;
+}
+{
+    if ($1 == "d") {
+        drop++;
+    }
+}
+END {
+    printf("Total packets dropped due to congestion = %d\n", drop);
+}
+
+Execute NS2 Simulation
+ns lab2.tcl
+Run AWK to count drops
+awk -f drop.awk lab2.tr
+View NAM Animation
+nam lab2.nam &
+
+
+
